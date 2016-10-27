@@ -245,6 +245,14 @@ public:
     Message *NewMessage(const Header &aHeader);
 
     /**
+     * This method returns a port number used by CoAP client.
+     *
+     * @returns  A port number.
+     *
+     */
+    uint16_t GetPort(void) { return mSocket.GetSockName().mPort; };
+
+    /**
      * This method sends a CoAP message.
      *
      * If a response for a request is expected, respective function and context information should be provided.

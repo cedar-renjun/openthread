@@ -52,6 +52,8 @@ SecureClient::SecureClient(ThreadNetif &aNetif):
 
 ThreadError SecureClient::Stop(void)
 {
+    otLogFuncEntry();
+
     if (IsConnectionStarted())
     {
         Disconnect();
@@ -63,14 +65,20 @@ ThreadError SecureClient::Stop(void)
         mTransmitMessage = NULL;
     }
 
+    otLogFuncExit();
+
     return Client::Stop();
 }
 
 ThreadError SecureClient::Connect(const Ip6::MessageInfo &aMessageInfo, ConnectedCallback aCallback, void *aContext)
 {
+    otLogFuncEntry();
+
     mPeerAddress = aMessageInfo;
     mConnectedCallback = aCallback;
     mContext = aContext;
+
+    otLogFuncExit();
 
     return mNetif.GetDtls().Start(true, &SecureClient::HandleDtlsReceive, &SecureClient::HandleDtlsSend, this);
 }
@@ -99,11 +107,14 @@ ThreadError SecureClient::SendMessage(Message &aMessage, otCoapResponseHandler a
 {
     ThreadError error = kThreadError_None;
 
+    otLogFuncEntry();
+
     VerifyOrExit(IsConnected(), error = kThreadError_InvalidState);
 
     error = Client::SendMessage(aMessage, mPeerAddress, aHandler, aContext);
 
 exit:
+    otLogFuncExitErr(error);
     return error;
 }
 
@@ -115,8 +126,9 @@ ThreadError SecureClient::Send(void *aContext, Message &aMessage, const Ip6::Mes
 ThreadError SecureClient::Send(Message &aMessage, const Ip6::MessageInfo &aMessageInfo)
 {
     (void)aMessageInfo;
-
     ThreadError error = kThreadError_None;
+
+    otLogFuncEntry();
 
     uint16_t length = aMessage.GetLength();
 
@@ -130,6 +142,7 @@ ThreadError SecureClient::Send(Message &aMessage, const Ip6::MessageInfo &aMessa
     aMessage.Free();
 
 exit:
+    otLogFuncExitErr(error);
     return error;
 }
 
@@ -226,6 +239,8 @@ void SecureClient::HandleUdpTransmit(void)
 {
     ThreadError error = kThreadError_None;
 
+    otLogFuncEntry();
+
     VerifyOrExit(mTransmitMessage != NULL, error = kThreadError_NoBufs);
 
 //    otLogInfoMeshCoP("transmit %d (to %llX)", mTransmitMessage->GetLength(),
@@ -241,6 +256,8 @@ exit:
     }
 
     mTransmitMessage = NULL;
+
+    otLogFuncExit();
 }
 
 }  // namespace Coap

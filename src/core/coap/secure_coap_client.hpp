@@ -125,11 +125,13 @@ public:
      */
     ThreadError Disconnect(void);
 
-    // todo doc
+    /**
+     * This method returns a reference to the DTLS object.
+     *
+     * @returns  A reference to the DTLS object.
+     *
+     */
     MeshCoP::Dtls &GetDtls(void);
-
-    // todo doc
-    uint16_t GetPort(void) { return mSocket.GetSockName().mPort; };
 
     /**
      * This method sends a CoAP message over secure DTLS connection.

@@ -40,7 +40,6 @@ libopenthread_a_SOURCES             = \
     coap/coap_client.cpp              \
     coap/coap_header.cpp              \
     coap/coap_server.cpp              \
-    coap/secure_coap_client.cpp       \
     common/crc16.cpp                  \
     common/logging.cpp                \
     common/message.cpp                \
@@ -109,6 +108,7 @@ endif  # OPENTHREAD_ENABLE_JOINER
 
 if OPENTHREAD_ENABLE_DTLS
 libopenthread_a_SOURCES            += \
+    coap/secure_coap_client.cpp       \
     meshcop/dtls.cpp                  \
     $(NULL)
 endif  # OPENTHREAD_ENABLE_DTLS

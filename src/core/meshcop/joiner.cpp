@@ -59,6 +59,9 @@ namespace Thread {
 namespace MeshCoP {
 
 Joiner::Joiner(ThreadNetif &aNetif):
+    mJoinerRouterChannel(0),
+    mJoinerRouterPanId(0),
+    mJoinerUdpPort(0),
     mTimer(aNetif.GetIp6().mTimerScheduler, &Joiner::HandleTimer, this),
     mJoinerEntrust(OPENTHREAD_URI_JOINER_ENTRUST, &Joiner::HandleJoinerEntrust, this),
     mCoapServer(aNetif.GetCoapServer()),
@@ -120,6 +123,8 @@ void Joiner::HandleDiscoverResult(otActiveScanResult *aResult, void *aContext)
 void Joiner::HandleDiscoverResult(otActiveScanResult *aResult)
 {
     Ip6::MessageInfo messageInfo;
+
+    otLogFuncEntry();
 
     if (aResult != NULL)
     {
@@ -313,6 +318,8 @@ void Joiner::SendJoinerEntrustResponse(const Coap::Header &aRequestHeader,
     Coap::Header responseHeader;
     Ip6::MessageInfo responseInfo;
 
+    otLogFuncEntry();
+
     VerifyOrExit((message = mCoapServer.NewMessage(0)) != NULL, error = kThreadError_NoBufs);
     message->SetSubType(Message::kSubTypeJoinerEntrust);
 
@@ -332,6 +339,8 @@ exit:
     {
         message->Free();
     }
+
+    otLogFuncExit();
 }
 
 void Joiner::HandleTimer(void *aContext)

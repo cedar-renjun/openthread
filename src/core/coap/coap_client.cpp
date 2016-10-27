@@ -32,6 +32,7 @@
 #include <common/debug.hpp>
 #include <common/code_utils.hpp>
 #include <net/ip6.hpp>
+#include <net/udp6.hpp>
 #include <platform/random.h>
 
 /**
@@ -42,16 +43,28 @@
 namespace Thread {
 namespace Coap {
 
-Client::Client(Ip6::Netif &aNetif):
+Client::Client(Ip6::Netif &aNetif, SenderFunction aSender, ReceiverFunction aReceiver):
     mSocket(aNetif.GetIp6().mUdp),
-    mRetransmissionTimer(aNetif.GetIp6().mTimerScheduler, &Client::HandleRetransmissionTimer, this)
+    mRetransmissionTimer(aNetif.GetIp6().mTimerScheduler, &Client::HandleRetransmissionTimer, this),
+    mSender(aSender),
+    mReceiver(aReceiver)
 {
     mMessageId = static_cast<uint16_t>(otPlatRandomGet());
 }
 
 ThreadError Client::Start()
 {
-    return mSocket.Open(&Client::HandleUdpReceive, this);
+    ThreadError error;
+    Ip6::SockAddr addr;
+
+    SuccessOrExit(error = mSocket.Open(&Client::HandleUdpReceive, this));
+
+    memset(&addr, 0, sizeof(addr));
+    addr.mPort = static_cast<Ip6::Udp *>(mSocket.mTransport)->GetEphemeralPort();
+    SuccessOrExit(error = mSocket.Bind(addr));
+
+exit:
+    return error;
 }
 
 ThreadError Client::Stop()
@@ -124,7 +137,7 @@ ThreadError Client::SendMessage(Message &aMessage, const Ip6::MessageInfo &aMess
                      error = kThreadError_NoBufs);
     }
 
-    SuccessOrExit(error = mSocket.SendTo(aMessage, aMessageInfo));
+    SuccessOrExit(error = mSender(this, aMessage, aMessageInfo));
 
 exit:
 
@@ -206,7 +219,7 @@ ThreadError Client::SendCopy(const Message &aMessage, const Ip6::MessageInfo &aM
                  error = kThreadError_NoBufs);
 
     // Send the copy.
-    SuccessOrExit(error = mSocket.SendTo(*messageCopy, aMessageInfo));
+    SuccessOrExit(error = mSender(this, *messageCopy, aMessageInfo));
 
 exit:
 
@@ -234,7 +247,7 @@ void Client::SendEmptyMessage(const Ip6::Address &aAddress, uint16_t aPort, uint
     messageInfo.GetPeerAddr() = aAddress;
     messageInfo.mPeerPort = aPort;
 
-    SuccessOrExit(error = mSocket.SendTo(*message, messageInfo));
+    SuccessOrExit(error = mSender(this, *message, messageInfo));
 
 exit:
 
@@ -366,13 +379,7 @@ void Client::FinalizeCoapTransaction(Message &aRequest, const RequestMetadata &a
     }
 }
 
-void Client::HandleUdpReceive(void *aContext, otMessage aMessage, const otMessageInfo *aMessageInfo)
-{
-    static_cast<Client *>(aContext)->HandleUdpReceive(*static_cast<Message *>(aMessage),
-                                                      *static_cast<const Ip6::MessageInfo *>(aMessageInfo));
-}
-
-void Client::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageInfo)
+void Client::ProcessReceivedMessage(Message &aMessage, const Ip6::MessageInfo &aMessageInfo)
 {
     Header responseHeader;
     Header requestHeader;
@@ -450,6 +457,12 @@ exit:
             SendReset(aMessageInfo.GetPeerAddr(), aMessageInfo.mPeerPort, responseHeader.GetMessageId());
         }
     }
+}
+
+void Client::HandleUdpReceive(void *aContext, otMessage aMessage, const otMessageInfo *aMessageInfo)
+{
+    static_cast<Client *>(aContext)->mReceiver(aContext, *static_cast<Message *>(aMessage),
+                                               *static_cast<const Ip6::MessageInfo *>(aMessageInfo));
 }
 
 RequestMetadata::RequestMetadata(bool aConfirmable, const Ip6::MessageInfo &aMessageInfo,

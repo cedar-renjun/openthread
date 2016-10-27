@@ -189,12 +189,34 @@ class Client
 public:
 
     /**
-     * This constructor initializes the object.
+     * This function pointer is called when CoAP client wants to send a message.
      *
-     * @param[in]  aNetif  A reference to the network interface that CoAP client should be assigned to.
+     * @param[in]  aContext      A pointer to arbitrary context information.
+     * @param[in]  aMessage      A reference to the message to send.
+     * @param[in]  aMessageInfo  A reference to the message info associated with @p aMessage.
      *
      */
-    Client(Ip6::Netif &aNetif);
+    typedef ThreadError(* SenderFunction)(void *aContext, Message &aMessage, const Ip6::MessageInfo &aMessageInfo);
+
+    /**
+     * This function pointer is called when CoAP client receives a message.
+     *
+     * @param[in]  aContext      A pointer to arbitrary context information.
+     * @param[in]  aMessage      A reference to the received message.
+     * @param[in]  aMessageInfo  A reference to the message info associated with @p aMessage.
+     *
+     */
+    typedef void (* ReceiverFunction)(void *aContext, Message &aMessage, const Ip6::MessageInfo &aMessageInfo);
+
+    /**
+     * This constructor initializes the object.
+     *
+     * @param[in]  aNetif    A reference to the network interface that CoAP client should be assigned to.
+     * @param[in]  aSender   A pointer to a function for sending messages.
+     * @param[in]  aReceiver A pointer to a function for handling received messages.
+     *
+     */
+    Client(Ip6::Netif &aNetif, SenderFunction aSender = &Client::Send, ReceiverFunction aReceiver = &Client::Receive);
 
     /**
      * This method starts the CoAP client.
@@ -241,6 +263,11 @@ public:
     ThreadError SendMessage(Message &aMessage, const Ip6::MessageInfo &aMessageInfo,
                             otCoapResponseHandler aHandler = NULL, void *aContext = NULL);
 
+protected:
+    void ProcessReceivedMessage(Message &aMessage, const Ip6::MessageInfo &aMessageInfo);
+
+    Ip6::UdpSocket mSocket;
+
 private:
     Message *CopyAndEnqueueMessage(const Message &aMessage, uint16_t aCopyLength,
                                    const RequestMetadata &aRequestMetadata);
@@ -263,12 +290,20 @@ private:
     void HandleRetransmissionTimer(void);
 
     static void HandleUdpReceive(void *aContext, otMessage aMessage, const otMessageInfo *aMessageInfo);
-    void HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageInfo);
 
-    Ip6::UdpSocket mSocket;
+    static ThreadError Send(void *aContext, Message &aMessage, const Ip6::MessageInfo &aMessageInfo) {
+        return (static_cast<Client *>(aContext))->mSocket.SendTo(aMessage, aMessageInfo);
+    }
+
+    static void Receive(void *aContext, Message &aMessage, const Ip6::MessageInfo &aMessageInfo) {
+        (static_cast<Client *>(aContext))->ProcessReceivedMessage(aMessage, aMessageInfo);
+    }
+
     MessageQueue mPendingRequests;
     uint16_t mMessageId;
     Timer mRetransmissionTimer;
+    SenderFunction mSender;
+    ReceiverFunction mReceiver;
 };
 
 }  // namespace Coap

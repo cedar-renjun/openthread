@@ -44,6 +44,7 @@
 
 #include <coap/coap_server.hpp>
 #include <coap/coap_client.hpp>
+#include <coap/secure_coap_client.hpp>
 #include <mac/mac.hpp>
 #include <meshcop/joiner_router.hpp>
 #include <meshcop/leader.hpp>
@@ -259,6 +260,8 @@ public:
 
 #if OPENTHREAD_ENABLE_DTLS
     MeshCoP::Dtls &GetDtls(void) { return mDtls; }
+
+    Coap::SecureClient &GetSecureCoapClient(void) { return mSecureCoapClient; }
 #endif  // OPENTHREAD_ENABLE_DTLS
 
 #if OPENTHREAD_ENABLE_JOINER
@@ -296,6 +299,7 @@ private:
 
 #if OPENTHREAD_ENABLE_DTLS
     MeshCoP::Dtls mDtls;
+    Coap::SecureClient mSecureCoapClient;
 #endif// OPENTHREAD_ENABLE_DTLS
 
 #if OPENTHREAD_ENABLE_JOINER

@@ -73,6 +73,7 @@ ThreadNetif::ThreadNetif(Ip6::Ip6 &aIp6):
 #endif  // OPENTHREAD_ENABLE_COMMISSIONER
 #if OPENTHREAD_ENABLE_DTLS
     mDtls(*this),
+    mSecureCoapClient(*this),
 #endif
 #if OPENTHREAD_ENABLE_JOINER
     mJoiner(*this),
@@ -93,11 +94,14 @@ ThreadError ThreadNetif::Up(void)
         mIp6.AddNetif(*this);
         mMeshForwarder.Start();
         mCoapServer.Start();
+        mCoapClient.Start();
+#if OPENTHREAD_ENABLE_DTLS
+        mSecureCoapClient.Start();
+#endif
         mMleRouter.Enable();
         mIsUp = true;
     }
 
-    mCoapClient.Start();
     return kThreadError_None;
 }
 
@@ -105,6 +109,9 @@ ThreadError ThreadNetif::Down(void)
 {
     mCoapServer.Stop();
     mCoapClient.Stop();
+#if OPENTHREAD_ENABLE_DTLS
+    mSecureCoapClient.Stop();
+#endif
     mMleRouter.Disable();
     mMeshForwarder.Stop();
     mIp6.RemoveNetif(*this);

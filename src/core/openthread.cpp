@@ -921,6 +921,36 @@ ThreadError otRemoveUnicastAddress(otInstance *aInstance, const otIp6Address *ad
     return aInstance->mThreadNetif.RemoveExternalUnicastAddress(*static_cast<const Ip6::Address *>(address));
 }
 
+const otNetifMulticastAddress *otGetMulticastAddresses(otInstance *aInstance)
+{
+    return aInstance->mThreadNetif.GetMulticastAddresses();
+}
+
+ThreadError otSubscribeMulticastAddress(otInstance *aInstance, const otIp6Address *aAddress)
+{
+    return aInstance->mThreadNetif.SubscribeExternalMulticast(*static_cast<const Ip6::Address *>(aAddress));
+}
+
+ThreadError otUnsubscribeMulticastAddress(otInstance *aInstance, const otIp6Address *aAddress)
+{
+    return aInstance->mThreadNetif.UnsubscribeExternalMulticast(*static_cast<const Ip6::Address *>(aAddress));
+}
+
+bool otIsMulticastPromiscuousModeEnabled(otInstance *aInstance)
+{
+    return aInstance->mThreadNetif.IsMulticastPromiscuousModeEnabled();
+}
+
+void otEnableMulticastPromiscuousMode(otInstance *aInstance)
+{
+    aInstance->mThreadNetif.EnableMulticastPromiscuousMode();
+}
+
+void otDisableMulticastPromiscuousMode(otInstance *aInstance)
+{
+    aInstance->mThreadNetif.DisableMulticastPromiscuousMode();
+}
+
 void otSlaacUpdate(otInstance *aInstance, otNetifAddress *aAddresses, uint32_t aNumAddresses,
                    otSlaacIidCreate aIidCreate, void *aContext)
 {
